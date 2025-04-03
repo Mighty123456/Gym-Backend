@@ -139,18 +139,8 @@ exports.approvePayment = async (req, res) => {
               <p><strong>Payment Status:</strong> Confirmed</p>
             </div>
             
-            <div style="text-align: center; margin: 20px 0;">
-              <a href="${fullReceiptUrl}" 
-                 style="background-color: #4CAF50; color: white; padding: 12px 25px; 
-                        text-decoration: none; border-radius: 5px; display: inline-block;">
-                Download Receipt
-              </a>
-            </div>
-            
-            <p style="font-size: 12px; color: #666; margin-top: 20px;">
-              If the button doesn't work, copy and paste this link in your browser:
-              <br>
-              ${fullReceiptUrl}
+            <p style="font-size: 14px; color: #666; margin-top: 20px;">
+              Thank you for your payment. Your membership is now active.
             </p>
           </div>
         </div>

@@ -17,7 +17,7 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://starfitnessgym.netlify.app', 'http://localhost:5173'] // Allow both frontend & localhost
+    ? 'https://starfitnessgym.netlify.app' // Only allow production frontend
     : 'http://localhost:5173', 
   credentials: true
 }));
