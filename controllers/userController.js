@@ -3,6 +3,8 @@ const APIError = require('../utils/APIError');
 const { sendEmail, createRegistrationEmail } = require('../services/emailService');
 const { getPlanAmount, getPlanDisplayName, formatIndianPrice } = require('../utils/formatters');
 const { generateReceipt } = require('../services/pdfService');
+const fs = require('fs');
+const path = require('path');
 
 exports.register = async (req, res) => {
   try {
@@ -240,18 +242,73 @@ exports.deleteUser = async (req, res) => {
       });
     }
 
+    // Delete user's photo if it exists
+    if (user.photo) {
+      try {
+        // Extract filename from the photo path (in case it's a full URL or relative path)
+        const photoFilename = user.photo.split('/').pop();
+        const photoPath = path.join(__dirname, '..', 'public', 'uploads', photoFilename);
+        
+        console.log('Attempting to delete photo at path:', photoPath);
+        
+        if (fs.existsSync(photoPath)) {
+          fs.unlinkSync(photoPath);
+          console.log('Successfully deleted photo:', photoPath);
+        } else {
+          console.log('Photo file not found at path:', photoPath);
+        }
+      } catch (photoError) {
+        console.error('Error deleting photo:', photoError);
+        // Continue with user deletion even if photo deletion fails
+      }
+    }
+
+    // Delete user's receipt if it exists
+    try {
+      const receiptDir = path.join(__dirname, '..', 'public', 'receipts');
+      console.log('Checking receipt directory:', receiptDir);
+      
+      // Get all files in the receipts directory
+      const files = fs.readdirSync(receiptDir);
+      console.log('Found receipt files:', files);
+      
+      // Find all receipts for this user
+      const userReceipts = files.filter(file => file.startsWith(`receipt-${userId}-`));
+      console.log('User receipts to delete:', userReceipts);
+      
+      // Delete each receipt file
+      userReceipts.forEach(receiptFile => {
+        const receiptPath = path.join(receiptDir, receiptFile);
+        if (fs.existsSync(receiptPath)) {
+          fs.unlinkSync(receiptPath);
+          console.log('Successfully deleted receipt:', receiptPath);
+        } else {
+          console.log('Receipt file not found at path:', receiptPath);
+        }
+      });
+      
+      if (userReceipts.length === 0) {
+        console.log('No receipt files found for user:', userId);
+      }
+    } catch (receiptError) {
+      console.error('Error deleting receipt:', receiptError);
+      // Continue with user deletion even if receipt deletion fails
+    }
+
+    // Delete user from database
     await User.findByIdAndDelete(userId);
-    console.log('User deleted successfully:', userId);
+    console.log('User deleted successfully from database:', userId);
 
     res.status(200).json({
       status: 'success',
-      message: 'User deleted successfully'
+      message: 'User and associated files deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error('Error in deleteUser:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Error deleting user'
+      message: 'Failed to delete user and associated files',
+      error: error.message
     });
   }
 };
