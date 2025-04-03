@@ -23,7 +23,7 @@ const UserSchema = new mongoose.Schema({
   },
   plan: {
     type: String,
-    enum: ['1month', 'quarterly', 'yearly'],
+    enum: ['1month', '2month', '3month', '6month', 'yearly'],
     required: [true, 'Please select a plan']
   },
   startDate: {

@@ -35,10 +35,10 @@ exports.register = async (req, res) => {
     };
 
     // Validate plan type
-    if (!['1month', 'quarterly', 'yearly'].includes(userData.plan)) {
+    if (!['1month', '2month', '3month', '6month', 'yearly'].includes(userData.plan)) {
       return res.status(400).json({
         status: 'error',
-        message: 'Invalid plan type. Must be one of: 1month, quarterly, yearly'
+        message: 'Invalid plan type. Must be one of: 1month, 2month, 3month, 6month, yearly'
       });
     }
 

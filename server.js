@@ -16,7 +16,14 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: ['https://starfitnesspetlad.netlify.app', 'http://localhost:5173'],
+  origin: function (origin, callback) {
+    const allowedOrigins = ['https://starfitnesspetlad.netlify.app', 'http://localhost:5173'];
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
@@ -26,15 +33,6 @@ const corsOptions = {
 
 // Apply CORS middleware
 app.use(cors(corsOptions));
-
-// Add CORS headers to all responses
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://starfitnesspetlad.netlify.app');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  next();
-});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
