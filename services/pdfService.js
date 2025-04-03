@@ -41,7 +41,9 @@ const generateReceipt = async (user) => {
     // Add amount based on plan
     const planPrices = {
       '1month': '₹1,500',
-      'quarterly': '₹5,000',
+      '2month': '₹2,500',
+      '3month': '₹3,500',
+      '6month': '₹5,000',
       'yearly': '₹8,000'
     };
     doc.text(`Amount Paid: ${planPrices[user.plan] || 'N/A'}`);
