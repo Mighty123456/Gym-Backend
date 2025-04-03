@@ -13,7 +13,7 @@ async function createAdminUser() {
         // Admin credentials
         const adminData = {
             email: 'admin@gmail.com',
-            password: 'admin123'  // This will be hashed
+            password: 'star@0205'  // This will be hashed
         };
 
         // Check if admin already exists
