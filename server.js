@@ -16,7 +16,7 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: ['https://starfitnesspetlad.netlify.app', 'http://localhost:5173'],
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'https://gym-frontend-hz0n.onrender.com', 'https://starfitnesspetlad.netlify.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
@@ -31,7 +31,7 @@ app.use(cors(corsOptions));
 
 // Add headers for all responses
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://starfitnesspetlad.netlify.app');
+  res.header('Access-Control-Allow-Origin', req.headers.origin || 'https://starfitnesspetlad.netlify.app');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -42,8 +42,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Serve static files
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'public/uploads');
+if (!fs.existsSync(uploadsDir)){
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Serve static files with proper headers and CORS
+app.use('/uploads', (req, res, next) => {
+  // Set CORS headers for static files
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || 'https://starfitnesspetlad.netlify.app');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+  next();
+}, express.static(path.join(__dirname, 'public/uploads')));
 
 // Create receipts directory if it doesn't exist
 const receiptDir = path.join(__dirname, 'public/receipts');
@@ -59,6 +73,10 @@ app.use('/receipts', (req, res, next) => {
   if (fs.existsSync(filePath)) {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || 'https://starfitnesspetlad.netlify.app');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     next();
   } else {
     res.status(404).json({
@@ -67,12 +85,6 @@ app.use('/receipts', (req, res, next) => {
     });
   }
 }, express.static(path.join(__dirname, 'public/receipts')));
-
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'public/uploads');
-if (!fs.existsSync(uploadsDir)){
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
 
 // Database connection
 connectDB();

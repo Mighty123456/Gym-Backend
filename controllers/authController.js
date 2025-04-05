@@ -5,6 +5,11 @@ const User = require('../models/User');
 const { sendEmail, createPaymentConfirmationEmail } = require('../services/emailService');
 const { getPlanAmount, getPlanDisplayName } = require('../utils/formatters');
 
+// Cache for storing failed login attempts
+const loginAttempts = new Map();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -17,15 +22,38 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check if admin exists && password is correct
-    const admin = await Admin.findOne({ email }).select('+password');
+    // Check for too many failed attempts
+    const attempts = loginAttempts.get(email) || { count: 0, timestamp: Date.now() };
+    if (attempts.count >= MAX_LOGIN_ATTEMPTS) {
+      const timeElapsed = Date.now() - attempts.timestamp;
+      if (timeElapsed < LOGIN_TIMEOUT) {
+        return res.status(429).json({
+          status: 'error',
+          message: 'Too many failed attempts. Please try again later.'
+        });
+      } else {
+        loginAttempts.delete(email);
+      }
+    }
+
+    // Use lean() for better performance when we don't need Mongoose documents
+    const admin = await Admin.findOne({ email }).select('+password').lean();
     
-    if (!admin || !(await admin.correctPassword(password, admin.password))) {
+    if (!admin || !(await Admin.prototype.correctPassword(password, admin.password))) {
+      // Increment failed attempts
+      loginAttempts.set(email, {
+        count: (attempts.count || 0) + 1,
+        timestamp: Date.now()
+      });
+
       return res.status(401).json({
         status: 'error',
         message: 'Incorrect email or password'
       });
     }
+
+    // Clear failed attempts on successful login
+    loginAttempts.delete(email);
 
     // If everything ok, send token to client
     const token = jwt.sign(
@@ -36,14 +64,23 @@ exports.login = async (req, res) => {
       }
     );
 
+    // Set token in HTTP-only cookie for better security
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
     res.status(200).json({
       status: 'success',
       token
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: 'An error occurred during login'
     });
   }
 };

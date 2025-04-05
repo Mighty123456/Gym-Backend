@@ -50,12 +50,26 @@ exports.register = async (req, res) => {
       });
     }
 
+    // Handle photo upload
     if (req.file) {
-      userData.photo = `/uploads/${req.file.filename}`;
+      // Ensure consistent path format for both development and production
+      userData.photo = `/uploads/${req.file.filename}`.replace(/\/+/g, '/');
+      console.log('Photo path set to:', userData.photo);
+      
+      // Verify the file exists
+      const photoPath = path.join(__dirname, '..', 'public', 'uploads', req.file.filename);
+      if (!fs.existsSync(photoPath)) {
+        console.error('Photo file not found at path:', photoPath);
+        return res.status(500).json({
+          status: 'error',
+          message: 'Error saving photo file'
+        });
+      }
     }
 
     console.log('Creating user with data:', userData);
-    const user = await User.create(userData);
+    const user = new User(userData);
+    await user.save();
     console.log('User created successfully:', user);
 
     try {
