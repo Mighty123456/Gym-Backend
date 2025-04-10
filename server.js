@@ -73,6 +73,8 @@ app.use('/uploads', (req, res, next) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    
+    console.log('Serving image:', filePath); // Debug log
     next();
   } else {
     console.log('Image not found at path:', filePath); // Debug log

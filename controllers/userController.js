@@ -25,8 +25,22 @@ exports.register = async (req, res) => {
     // Handle photo upload
     let photoPath = null;
     if (req.file) {
+      // Ensure the path starts with /uploads/
       photoPath = `/uploads/${req.file.filename}`;
       console.log('Photo path saved:', photoPath);
+      
+      // Verify the file exists
+      const fullPath = path.join(__dirname, '..', 'public', photoPath);
+      if (!fs.existsSync(fullPath)) {
+        console.error('Uploaded file not found at:', fullPath);
+        return res.status(500).json({
+          status: 'error',
+          message: 'Error saving photo'
+        });
+      }
+    } else {
+      // Set default photo path
+      photoPath = '/default-avatar.png';
     }
 
     // Format dates
@@ -181,6 +195,8 @@ exports.getAllUsers = async (req, res) => {
       if (userObj.photo) {
         // If it's a default photo, keep it as is
         if (userObj.photo === '/default-avatar.png') {
+          const baseUrl = process.env.BASE_URL || 'https://gym-backend-hz0n.onrender.com';
+          userObj.photo = `${baseUrl}${userObj.photo}`;
           return userObj;
         }
         
@@ -189,21 +205,20 @@ exports.getAllUsers = async (req, res) => {
           return userObj;
         }
         
-        // Ensure the photo path starts with /uploads/
-        if (!userObj.photo.startsWith('/uploads/')) {
-          userObj.photo = `/uploads/${userObj.photo.split('/').pop()}`;
+        // Clean the photo path
+        let photoPath = userObj.photo;
+        if (!photoPath.startsWith('/uploads/')) {
+          photoPath = `/uploads/${photoPath.split('/').pop()}`;
         }
         
-        // Add base URL if not present
-        if (!userObj.photo.startsWith('http')) {
-          const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-          userObj.photo = `${baseUrl}${userObj.photo}`;
-        }
+        // Add base URL
+        const baseUrl = process.env.BASE_URL || 'https://gym-backend-hz0n.onrender.com';
+        userObj.photo = `${baseUrl}${photoPath}`;
         
-        console.log('Processed photo path:', userObj.photo); // Debug log
+        console.log('Processed photo URL:', userObj.photo); // Debug log
       } else {
         // Set default photo if no photo is provided
-        const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+        const baseUrl = process.env.BASE_URL || 'https://gym-backend-hz0n.onrender.com';
         userObj.photo = `${baseUrl}/default-avatar.png`;
       }
       
