@@ -36,10 +36,26 @@ exports.login = async (req, res) => {
       }
     }
 
-    // Use lean() for better performance when we don't need Mongoose documents
-    const admin = await Admin.findOne({ email }).select('+password').lean();
+    // Find admin and explicitly select the password field
+    const admin = await Admin.findOne({ email }).select('+password');
     
-    if (!admin || !(await Admin.prototype.correctPassword(password, admin.password))) {
+    if (!admin) {
+      // Increment failed attempts
+      loginAttempts.set(email, {
+        count: (attempts.count || 0) + 1,
+        timestamp: Date.now()
+      });
+
+      return res.status(401).json({
+        status: 'error',
+        message: 'Incorrect email or password'
+      });
+    }
+
+    // Compare passwords using the instance method
+    const isPasswordCorrect = await admin.correctPassword(password, admin.password);
+    
+    if (!isPasswordCorrect) {
       // Increment failed attempts
       loginAttempts.set(email, {
         count: (attempts.count || 0) + 1,
@@ -72,6 +88,7 @@ exports.login = async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
+    // Also send token in response body for client-side storage
     res.status(200).json({
       status: 'success',
       token

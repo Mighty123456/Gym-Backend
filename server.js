@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 const errorHandler = require('./middleware/error');
@@ -29,6 +30,9 @@ const corsOptions = {
 // Apply CORS middleware
 app.use(cors(corsOptions));
 
+// Add cookie-parser middleware
+app.use(cookieParser());
+
 // Add headers for all responses
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || 'https://starfitnesspetlad.netlify.app');
@@ -49,15 +53,7 @@ if (!fs.existsSync(uploadsDir)){
 }
 
 // Serve static files with proper headers and CORS
-app.use('/uploads', (req, res, next) => {
-  // Set CORS headers for static files
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || 'https://starfitnesspetlad.netlify.app');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-  next();
-}, express.static(path.join(__dirname, 'public/uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Create receipts directory if it doesn't exist
 const receiptDir = path.join(__dirname, 'public/receipts');
@@ -149,3 +145,45 @@ process.on('unhandledRejection', (err) => {
   console.log(err.name, err.message);
   process.exit(1);
 });
+
+exports.register = async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+    const errors = [];
+
+    if (!name) errors.push('Name is required.');
+    if (!email || !/\S+@\S+\.\S+/.test(email)) errors.push('Valid email is required.');
+    if (!phone || !/^\d{10}$/.test(phone)) errors.push('Valid phone number is required.');
+
+    if (errors.length > 0) {
+      return res.status(400).json({ status: 'error', message: errors });
+    }
+
+    // ... existing registration logic ...
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: 'An error occurred during registration' });
+  }
+};
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find();
+    const processedUsers = users.map(user => {
+      const userObj = user.toObject();
+      console.log('Processed photo path:', userObj.photo);
+      return userObj;
+    });
+    res.status(200).json({
+      status: 'success',
+      data: {
+        users: processedUsers
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching users'
+    });
+  }
+};

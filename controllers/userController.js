@@ -65,6 +65,10 @@ exports.register = async (req, res) => {
           message: 'Error saving photo file'
         });
       }
+      
+      // Log the full path for debugging
+      console.log('Full photo path:', photoPath);
+      console.log('Photo URL will be:', `${process.env.BASE_URL || 'http://localhost:3000'}${userData.photo}`);
     }
 
     console.log('Creating user with data:', userData);
@@ -180,10 +184,43 @@ exports.approvePayment = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
+    
+    // Process users to ensure photo URLs are correct
+    const processedUsers = users.map(user => {
+      const userObj = user.toObject();
+      
+      // Handle photo path
+      if (userObj.photo) {
+        // If it's a default photo, keep it as is
+        if (userObj.photo === '/default-avatar.png') {
+          return userObj;
+        }
+        
+        // If it's already a full URL, keep it as is
+        if (userObj.photo.startsWith('http')) {
+          return userObj;
+        }
+        
+        // Ensure the photo path starts with /uploads/
+        if (!userObj.photo.startsWith('/uploads/')) {
+          userObj.photo = `/uploads/${userObj.photo.split('/').pop()}`;
+        }
+        
+        // Add base URL if not present
+        if (!userObj.photo.startsWith('http')) {
+          userObj.photo = `${process.env.BASE_URL || 'http://localhost:3000'}${userObj.photo}`;
+        }
+        
+        console.log('Processed photo path:', userObj.photo); // Debug log
+      }
+      
+      return userObj;
+    });
+    
     res.status(200).json({
       status: 'success',
       data: {
-        users
+        users: processedUsers
       }
     });
   } catch (error) {
