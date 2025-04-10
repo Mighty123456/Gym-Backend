@@ -195,7 +195,7 @@ exports.getAllUsers = async (req, res) => {
       if (userObj.photo) {
         // If it's a default photo, keep it as is
         if (userObj.photo === '/default-avatar.png') {
-          const baseUrl = process.env.BASE_URL || 'https://gym-backend-hz0n.onrender.com';
+          const baseUrl = process.env.BASE_URL || 'https://gym-backend-mz5w.onrender.com';
           userObj.photo = `${baseUrl}${userObj.photo}`;
           return userObj;
         }
@@ -212,13 +212,13 @@ exports.getAllUsers = async (req, res) => {
         }
         
         // Add base URL
-        const baseUrl = process.env.BASE_URL || 'https://gym-backend-hz0n.onrender.com';
+        const baseUrl = process.env.BASE_URL || 'https://gym-backend-mz5w.onrender.com';
         userObj.photo = `${baseUrl}${photoPath}`;
         
         console.log('Processed photo URL:', userObj.photo); // Debug log
       } else {
         // Set default photo if no photo is provided
-        const baseUrl = process.env.BASE_URL || 'https://gym-backend-hz0n.onrender.com';
+        const baseUrl = process.env.BASE_URL || 'https://gym-backend-mz5w.onrender.com';
         userObj.photo = `${baseUrl}/default-avatar.png`;
       }
       
