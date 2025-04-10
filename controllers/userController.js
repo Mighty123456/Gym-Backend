@@ -9,6 +9,7 @@ const path = require('path');
 exports.register = async (req, res) => {
   try {
     console.log('Registration request received:', req.body);
+    console.log('Uploaded file:', req.file);
 
     // Validate required fields
     const requiredFields = ['name', 'email', 'phone', 'dob', 'plan', 'startDate', 'endDate', 'paymentMethod'];
@@ -21,6 +22,13 @@ exports.register = async (req, res) => {
       });
     }
 
+    // Handle photo upload
+    let photoPath = null;
+    if (req.file) {
+      photoPath = `/uploads/${req.file.filename}`;
+      console.log('Photo path saved:', photoPath);
+    }
+
     // Format dates
     const userData = {
       name: req.body.name,
@@ -31,7 +39,8 @@ exports.register = async (req, res) => {
       startDate: new Date(req.body.startDate),
       endDate: new Date(req.body.endDate),
       paymentMethod: req.body.paymentMethod,
-      paymentStatus: 'pending'
+      paymentStatus: 'pending',
+      photo: photoPath // Add photo path to user data
     };
 
     // Validate plan type
@@ -48,27 +57,6 @@ exports.register = async (req, res) => {
         status: 'error',
         message: 'Invalid payment method. Must be either cash or online'
       });
-    }
-
-    // Handle photo upload
-    if (req.file) {
-      // Ensure consistent path format for both development and production
-      userData.photo = `/uploads/${req.file.filename}`.replace(/\/+/g, '/');
-      console.log('Photo path set to:', userData.photo);
-      
-      // Verify the file exists
-      const photoPath = path.join(__dirname, '..', 'public', 'uploads', req.file.filename);
-      if (!fs.existsSync(photoPath)) {
-        console.error('Photo file not found at path:', photoPath);
-        return res.status(500).json({
-          status: 'error',
-          message: 'Error saving photo file'
-        });
-      }
-      
-      // Log the full path for debugging
-      console.log('Full photo path:', photoPath);
-      console.log('Photo URL will be:', `${process.env.BASE_URL || 'http://localhost:3000'}${userData.photo}`);
     }
 
     console.log('Creating user with data:', userData);
@@ -208,10 +196,15 @@ exports.getAllUsers = async (req, res) => {
         
         // Add base URL if not present
         if (!userObj.photo.startsWith('http')) {
-          userObj.photo = `${process.env.BASE_URL || 'http://localhost:3000'}${userObj.photo}`;
+          const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+          userObj.photo = `${baseUrl}${userObj.photo}`;
         }
         
         console.log('Processed photo path:', userObj.photo); // Debug log
+      } else {
+        // Set default photo if no photo is provided
+        const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+        userObj.photo = `${baseUrl}/default-avatar.png`;
       }
       
       return userObj;

@@ -53,7 +53,46 @@ if (!fs.existsSync(uploadsDir)){
 }
 
 // Serve static files with proper headers and CORS
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+app.use('/uploads', (req, res, next) => {
+  const filePath = path.join(__dirname, 'public/uploads', req.path);
+  
+  // Check if file exists
+  if (fs.existsSync(filePath)) {
+    // Set appropriate content type based on file extension
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif'
+    }[ext] || 'application/octet-stream';
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins for images
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    next();
+  } else {
+    console.log('Image not found at path:', filePath); // Debug log
+    // Serve default avatar if image not found
+    const defaultAvatarPath = path.join(__dirname, 'public', 'default-avatar.png');
+    if (fs.existsSync(defaultAvatarPath)) {
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.sendFile(defaultAvatarPath);
+    } else {
+      res.status(404).json({
+        status: 'error',
+        message: 'Image not found'
+      });
+    }
+  }
+}, express.static(path.join(__dirname, 'public/uploads'), {
+  setHeaders: (res, path) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
 
 // Create receipts directory if it doesn't exist
 const receiptDir = path.join(__dirname, 'public/receipts');
