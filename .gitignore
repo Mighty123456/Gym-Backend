@@ -27,6 +27,3 @@ Thumbs.db
 logs/
 *.log
 
-# Uploaded files
-public/uploads/*
-!public/uploads/.gitkeep 
